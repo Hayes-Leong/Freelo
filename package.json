@@ -1,0 +1,14 @@
+{
+  "name": "okr-calendar",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Freelo - 独立开发者、自由职业者、数字游民、一人公司、超级个体的OKR日程管理器",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "date-fns": "^3.6.0",
+    "express": "^4.21.2"
+  }
+}
