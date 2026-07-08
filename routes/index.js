@@ -12,5 +12,7 @@ router.use('/checkin', require('./checkin'));
 router.use('/reward', require('./reward'));
 router.use('/okrs', require('./okrs'));
 router.use('/ideas', require('./ideas'));
+router.use('/timer', require('./timer'));
+router.use('/stats', require('./stats'));
 
 module.exports = router;

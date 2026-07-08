@@ -1,0 +1,43 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 全局基础样式 */
+html {
+  font-size: clamp(14px, 1.15vw, 18px);
+}
+
+body {
+  @apply bg-rice-100 text-rice-900 antialiased;
+  font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+}
+
+/* 日历格子最小高度 */
+.cal-cell {
+  min-height: 90px;
+}
+
+/* 滚动条美化 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-rice-400 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-rice-700;
+}
+
+/* 自定义选中文字颜色 */
+::selection {
+  @apply bg-rice-300 text-rice-900;
+}

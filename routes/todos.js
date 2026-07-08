@@ -18,8 +18,17 @@ router.get('/', (req, res) => {
 router.post('/', (req, res) => {
   try {
     const db = req.app.get('db');
-    const { date, content, is_core } = req.body;
-    if (!date || !content) return res.status(400).json({ error: 'date 和 content 为必填' });
+    const { date, content, is_core, task_type, estimated_duration } = req.body;
+
+    if (!date || !content) {
+      return res.status(400).json({ error: 'date 和 content 为必填' });
+    }
+    if (!task_type) {
+      return res.status(400).json({ error: 'task_type 为必填（work 或 study）' });
+    }
+    if (!estimated_duration || estimated_duration < 15) {
+      return res.status(400).json({ error: 'estimated_duration 为必填，最小 15 分钟' });
+    }
 
     // 若设为核心任务，先清除该日其他核心
     if (is_core) {
@@ -29,7 +38,13 @@ router.post('/', (req, res) => {
       });
     }
 
-    const todo = db.todos.insert({ date, content, is_core: is_core ? 1 : 0 });
+    const todo = db.todos.insert({
+      date,
+      content,
+      is_core: is_core ? 1 : 0,
+      task_type,
+      estimated_duration,
+    });
     res.status(201).json(todo);
   } catch (err) {
     res.status(500).json({ error: err.message || '创建待办失败' });
@@ -58,6 +73,8 @@ router.put('/:id', (req, res) => {
         });
       }
     }
+    if (req.body.task_type !== undefined) updates.task_type = req.body.task_type;
+    if (req.body.estimated_duration !== undefined) updates.estimated_duration = req.body.estimated_duration;
 
     const updated = db.todos.update(id, updates);
     res.json(updated);
