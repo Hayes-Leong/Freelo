@@ -37,4 +37,18 @@ router.get('/range', (req, res) => {
   }
 });
 
+/**
+ * GET /api/stats/achievements
+ * 获取成就数据（连续打卡天数、累计番茄数、里程碑）
+ */
+router.get('/achievements', (req, res) => {
+  try {
+    const db = req.app.get('db');
+    const data = db.stats.achievements();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message || '获取成就数据失败' });
+  }
+});
+
 module.exports = router;

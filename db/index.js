@@ -68,6 +68,15 @@ function migrate(data) {
       }
     });
   }
+  // 迁移 time_records：补全 record_type
+  if (Array.isArray(data.time_records)) {
+    data.time_records.forEach((tr) => {
+      if (!tr.hasOwnProperty('record_type')) {
+        tr.record_type = 'manual';
+        changed = true;
+      }
+    });
+  }
 
   return data;
 }
@@ -235,7 +244,7 @@ const db = {
       );
     },
     insert(row) {
-      const record = { id: nextId(data), ...row };
+      const record = { id: nextId(data), record_type: 'manual', ...row };
       data.time_records.push(record);
       save(data);
       return record;
@@ -365,12 +374,17 @@ const db = {
         (t) => t.date === date && t.completed === 1
       ).length;
 
+      const pomodoroCount = records.filter((tr) => tr.record_type === 'pomodoro').length;
+      const longestSegment = records.reduce((max, tr) => Math.max(max, tr.duration_minutes || 0), 0);
+
       return {
         date,
         total_minutes: totalMinutes,
         work_minutes: workMinutes,
         study_minutes: studyMinutes,
         completed_todos: completedTodos,
+        pomodoro_count: pomodoroCount,
+        longest_segment_minutes: longestSegment,
       };
     },
 
@@ -387,6 +401,88 @@ const db = {
       }
 
       return { start, end, days };
+    },
+
+    // 成就数据
+    achievements() {
+      // 连续打卡天数（从昨天往前数，因为今天可能还没打卡）
+      const today = new Date().toISOString().slice(0, 10);
+      let streak = 0;
+      const d = new Date(today + 'T00:00:00');
+      d.setDate(d.getDate() - 1); // 从昨天开始检查
+      while (true) {
+        const dateStr = d.toISOString().slice(0, 10);
+        const status = data.day_status.find((ds) => ds.date === dateStr);
+        if (status && status.checkin_done === 1) {
+          streak++;
+          d.setDate(d.getDate() - 1);
+        } else {
+          break;
+        }
+      }
+
+      // 累计番茄数和香蕉数
+      const completedRecords = data.time_records.filter(
+        (tr) => tr.status === 'completed'
+      );
+      const totalPomodoros = completedRecords.filter(tr => tr.record_type === 'pomodoro').length;
+
+      // 香蕉 = 手动计时总分钟 / 每根香蕉分钟数（默认25）
+      const bananaThreshold = parseInt(data.config.banana_threshold) || 25;
+      const totalManualMinutes = completedRecords
+        .filter(tr => tr.record_type === 'manual')
+        .reduce((s, tr) => s + (tr.duration_minutes || 0), 0);
+      const totalBananas = Math.floor(totalManualMinutes / bananaThreshold);
+
+      // 里程碑
+      const milestones = [];
+      if (streak >= 7) milestones.push('连续打卡7天');
+      if (streak >= 30) milestones.push('连续打卡30天');
+      if (streak >= 100) milestones.push('连续打卡100天');
+      if (totalPomodoros >= 25) milestones.push('累计25个番茄');
+      if (totalPomodoros >= 100) milestones.push('累计100个番茄');
+      if (totalBananas >= 20) milestones.push('累计20根香蕉');
+      if (totalBananas >= 100) milestones.push('累计100根香蕉');
+
+      return { streak_days: streak, total_pomodoros: totalPomodoros, total_bananas: totalBananas, milestones };
+    },
+
+    // 周视图时间块
+    weekTimeBlocks(dateStr) {
+      const d = new Date(dateStr + 'T00:00:00');
+      const dayOfWeek = d.getDay(); // 0=Sun
+      const monday = new Date(d);
+      monday.setDate(d.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+      const sunday = new Date(monday);
+      sunday.setDate(monday.getDate() + 6);
+
+      const start = monday.toISOString().slice(0, 10);
+      const end = sunday.toISOString().slice(0, 10);
+
+      const days = [];
+      const current = new Date(monday);
+      while (current <= sunday) {
+        const dateStr2 = current.toISOString().slice(0, 10);
+        const records = data.time_records.filter(
+          (tr) => tr.date === dateStr2 && tr.status === 'completed'
+        );
+        const timeBlocks = records.map((tr) => {
+          const todo = data.todos.find((t) => t.id === tr.todo_id);
+          const startTime = new Date(tr.start_time);
+          const startMin = startTime.getHours() * 60 + startTime.getMinutes();
+          return {
+            start_minutes: startMin,
+            duration_minutes: tr.duration_minutes || 0,
+            task_type: todo ? todo.task_type : 'work',
+            content: todo ? todo.content : '',
+          };
+        }).sort((a, b) => a.start_minutes - b.start_minutes);
+
+        days.push({ date: dateStr2, timeBlocks });
+        current.setDate(current.getDate() + 1);
+      }
+
+      return { weekStart: start, weekEnd: end, days };
     },
   },
 };

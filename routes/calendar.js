@@ -115,4 +115,20 @@ router.put('/:date', (req, res) => {
   }
 });
 
+/**
+ * GET /api/calendar/week?date=YYYY-MM-DD
+ * 返回包含该日期的周的 7 天时间块数据
+ */
+router.get('/week', (req, res) => {
+  try {
+    const db = req.app.get('db');
+    const { date } = req.query;
+    const targetDate = date || new Date().toISOString().slice(0, 10);
+    const data = db.stats.weekTimeBlocks(targetDate);
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message || '获取周视图失败' });
+  }
+});
+
 module.exports = router;

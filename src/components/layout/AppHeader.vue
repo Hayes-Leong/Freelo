@@ -4,39 +4,28 @@
       Freelo
     </h1>
     <div class="flex items-center gap-2">
-      <button
-        @click="$emit('prevMonth')"
-        class="px-3 py-1.5 rounded-lg hover:bg-rice-200 text-rice-700 transition-colors text-lg"
-      >‹</button>
-      <span class="text-base font-semibold text-rice-800 w-32 text-center">
-        {{ formattedMonth }}
-      </span>
-      <button
-        @click="$emit('nextMonth')"
-        class="px-3 py-1.5 rounded-lg hover:bg-rice-200 text-rice-700 transition-colors text-lg"
-      >›</button>
-      <!-- 统计入口 -->
-      <button
-        @click="$emit('openStats')"
-        class="ml-3 px-3 py-1.5 text-terracotta-500 hover:bg-rice-200 rounded-lg transition-colors flex items-center gap-1"
-        title="时间统计"
-      >
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-        </svg>
-      </button>
+      <button @click="$emit('prevMonth')" class="px-3 py-1.5 rounded-lg hover:bg-rice-200 text-rice-700 transition-colors text-lg">‹</button>
+      <span class="text-base font-semibold text-rice-800 w-32 text-center">{{ formattedMonth }}</span>
+      <button @click="$emit('nextMonth')" class="px-3 py-1.5 rounded-lg hover:bg-rice-200 text-rice-700 transition-colors text-lg">›</button>
+
+      <!-- 三个独立面板入口 -->
+      <span class="text-rice-300 mx-1">|</span>
+      <button @click="$emit('openStats')" class="px-3 py-1.5 text-sm text-rice-600 hover:bg-rice-200 rounded-lg transition-colors font-medium flex items-center gap-1" title="时间统计"><SvgIcon name="chart" :size="16" /> 统计</button>
+      <button @click="$emit('openAchievements')" class="px-3 py-1.5 text-sm text-amber-600 hover:bg-amber-50 rounded-lg transition-colors font-medium flex items-center gap-1" title="成就"><SvgIcon name="award" :size="16" /> 成就</button>
+      <button @click="$emit('openSettings')" class="px-3 py-1.5 text-sm text-rice-500 hover:bg-rice-200 rounded-lg transition-colors font-medium flex items-center gap-1" title="设置"><SvgIcon name="settings" :size="16" /> 设置</button>
     </div>
   </header>
 </template>
 
 <script setup>
 import { computed } from 'vue'
+import SvgIcon from '../common/SvgIcon.vue'
 
 const props = defineProps({
   currentMonth: { type: String, required: true },
 })
 
-defineEmits(['prevMonth', 'nextMonth', 'openStats'])
+defineEmits(['prevMonth', 'nextMonth', 'openStats', 'openAchievements', 'openSettings'])
 
 const formattedMonth = computed(() => {
   const [y, m] = props.currentMonth.split('-')

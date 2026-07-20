@@ -80,14 +80,14 @@ import KrList from './KrList.vue'
 import OkrFormModal from './OkrFormModal.vue'
 import { useApi } from '../../composables/useApi.js'
 
+const api = useApi()
+
 const props = defineProps({
   data: { type: Object, default: null },
   currentMonth: { type: String, default: '' },
 })
 
 const emit = defineEmits(['refresh'])
-
-const api = useApi()
 // 使用 App.vue 提供的确认弹窗（必须 inject，不能用 useConfirm）
 const confirm = inject('appConfirm', () => Promise.resolve(false))
 

@@ -14,5 +14,6 @@ router.use('/okrs', require('./okrs'));
 router.use('/ideas', require('./ideas'));
 router.use('/timer', require('./timer'));
 router.use('/stats', require('./stats'));
+router.use('/config', require('./config'));
 
 module.exports = router;

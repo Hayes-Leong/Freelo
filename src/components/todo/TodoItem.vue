@@ -1,5 +1,5 @@
 <template>
-  <li class="flex items-center gap-2 text-sm py-1.5 px-2 rounded-lg hover:bg-rice-200/50 group transition-colors">
+  <li class="flex items-center gap-2 text-sm py-1.5 px-2 rounded-lg hover:bg-rice-200/50 group transition-colors relative">
     <!-- 完成复选框 -->
     <input
       type="checkbox"
@@ -31,14 +31,27 @@
       class="text-xs text-ink-500 flex-shrink-0 font-medium"
     >{{ formatDuration(todo.total_elapsed) }}</span>
 
-    <!-- 计时按钮 -->
-    <button
-      v-if="!timerActive"
-      :disabled="todo.completed === 1"
-      class="text-rice-400 hover:text-ink-500 invisible group-hover:visible text-sm flex-shrink-0 disabled:opacity-30 disabled:cursor-not-allowed"
-      title="开始计时"
-      @click="$emit('startTimer')"
-    >▶</button>
+    <!-- 计时按钮 + 模式选择 -->
+    <div v-if="!timerActive" class="relative flex-shrink-0">
+      <!-- 模式选择弹窗 -->
+      <div v-if="showModePicker" class="absolute bottom-full right-0 mb-1 bg-rice-50 border border-rice-400 rounded-xl shadow-lg p-2 z-50 flex gap-1.5 whitespace-nowrap animate-fade-in">
+        <button
+          @click.stop="startWithMode('stopwatch')"
+          class="px-3 py-1.5 text-xs rounded-lg bg-rice-300/50 hover:bg-rice-300 text-rice-800 font-medium transition-colors"
+        >🍌 香蕉钟</button>
+        <button
+          @click.stop="startWithMode('pomodoro')"
+          class="px-3 py-1.5 text-xs rounded-lg bg-red-100 hover:bg-red-200 text-red-700 font-medium transition-colors"
+        >🍅 番茄钟</button>
+      </div>
+      <!-- 触发按钮 -->
+      <button
+        :disabled="todo.completed === 1"
+        class="text-rice-400 hover:text-ink-500 invisible group-hover:visible text-sm disabled:opacity-30 disabled:cursor-not-allowed"
+        title="开始计时"
+        @click.stop="showModePicker = !showModePicker"
+      >▶</button>
+    </div>
 
     <!-- 设为核心 -->
     <button
@@ -59,8 +72,8 @@
 </template>
 
 <script setup>
+import { ref, inject } from 'vue'
 import { computed } from 'vue'
-import { inject } from 'vue'
 
 const props = defineProps({
   todo: { type: Object, required: true },
@@ -69,9 +82,10 @@ const props = defineProps({
 
 const emit = defineEmits(['changed', 'startTimer'])
 
-// 注入 API 和刷新方法
 const api = inject('appApi')
 const toast = inject('appToast', () => {})
+
+const showModePicker = ref(false)
 
 const typeLabel = computed(() => props.todo.task_type === 'study' ? '学习' : '工作')
 const typeBadgeClass = computed(() =>
@@ -87,33 +101,31 @@ const contentClass = computed(() => {
   return classes
 })
 
-// 直接调用 API
+function startWithMode(mode) {
+  showModePicker.value = false
+  emit('startTimer', { todo: props.todo, mode })
+}
+
 async function handleToggle() {
   try {
     const completed = props.todo.completed ? 0 : 1
     await api.put(`/api/todos/${props.todo.id}`, { completed })
     emit('changed')
-  } catch (e) {
-    toast('操作失败', 'error')
-  }
+  } catch (e) { toast('操作失败', 'error') }
 }
 
 async function handleSetCore() {
   try {
     await api.put(`/api/todos/${props.todo.id}`, { is_core: 1 })
     emit('changed')
-  } catch (e) {
-    toast('操作失败', 'error')
-  }
+  } catch (e) { toast('操作失败', 'error') }
 }
 
 async function handleDelete() {
   try {
     await api.del(`/api/todos/${props.todo.id}`)
     emit('changed')
-  } catch (e) {
-    toast('操作失败', 'error')
-  }
+  } catch (e) { toast('操作失败', 'error') }
 }
 
 function formatDuration(minutes) {

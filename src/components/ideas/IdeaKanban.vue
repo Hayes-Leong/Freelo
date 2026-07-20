@@ -1,6 +1,6 @@
 <template>
-  <div class="mt-6">
-    <h3 class="text-base font-bold text-rice-800 mb-2">💡 代办看板</h3>
+  <div>
+    <h3 class="text-base font-bold text-rice-800 mb-2">代办看板</h3>
     <div class="flex gap-2 mb-3">
       <input
         v-model="content"

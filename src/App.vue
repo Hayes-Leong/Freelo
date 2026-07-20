@@ -4,15 +4,19 @@
       :current-month="state.currentMonth"
       @prev-month="changeMonth(-1)"
       @next-month="changeMonth(1)"
-      @open-stats="openStats"
+      @open-stats="() => openPanel('stats')"
+      @open-achievements="() => openPanel('achievements')"
+      @open-settings="() => openPanel('settings')"
     />
     <AppLayout>
       <template #left>
-        <OkrPanel
-          :data="okrData"
-          :current-month="state.currentMonth"
-          @refresh="loadOkrs"
-        />
+        <!-- 左栏 Tab -->
+        <div class="flex gap-1 mb-3 bg-rice-200 rounded-lg p-0.5">
+          <button @click="leftTab = 'okr'" :class="leftTab === 'okr' ? 'bg-rice-50 text-rice-800 shadow-sm' : 'text-rice-500 hover:text-rice-700'" class="flex-1 py-1 text-xs font-medium rounded-md transition-colors">OKR</button>
+          <button @click="leftTab = 'ideas'" :class="leftTab === 'ideas' ? 'bg-rice-50 text-rice-800 shadow-sm' : 'text-rice-500 hover:text-rice-700'" class="flex-1 py-1 text-xs font-medium rounded-md transition-colors">代办</button>
+        </div>
+        <OkrPanel v-if="leftTab === 'okr'" :data="okrData" :current-month="state.currentMonth" @refresh="loadOkrs" />
+        <IdeaKanban v-else />
       </template>
       <template #center>
         <CalendarGrid
@@ -25,8 +29,6 @@
         <!-- 未选择日期 -->
         <div v-if="!state.selectedDate" class="text-rice-700 text-sm p-4">
           <p class="text-center text-rice-400 mt-8">请在日历中点击日期</p>
-          <!-- 灵感看板在未选日期时也显示 -->
-          <IdeaKanban />
         </div>
 
         <!-- 已选择日期 -->
@@ -52,9 +54,6 @@
             @checkin="doCheckin"
             @toggle-rest-day="toggleRestDay"
           />
-
-          <!-- 灵感看板 -->
-          <IdeaKanban />
         </template>
       </template>
     </AppLayout>
@@ -64,6 +63,8 @@
 
     <!-- 统计面板 -->
     <StatsPanel ref="statsPanel" />
+    <AchievementsPanel ref="achievementsPanel" />
+    <SettingsPanel ref="settingsPanel" />
 
     <!-- Toast 容器 -->
     <ToastContainer ref="toastContainer" />
@@ -83,6 +84,8 @@ import OkrPanel from './components/okr/OkrPanel.vue'
 import IdeaKanban from './components/ideas/IdeaKanban.vue'
 import TimerWidget from './components/timer/TimerWidget.vue'
 import StatsPanel from './components/stats/StatsPanel.vue'
+import AchievementsPanel from './components/stats/AchievementsPanel.vue'
+import SettingsPanel from './components/stats/SettingsPanel.vue'
 import ToastContainer from './components/common/ToastContainer.vue'
 import ConfirmModal from './components/common/ConfirmModal.vue'
 import { useApi } from './composables/useApi.js'
@@ -94,6 +97,8 @@ const toastContainer = ref(null)
 const confirmModal = ref(null)
 const timerWidget = ref(null)
 const statsPanel = ref(null)
+const achievementsPanel = ref(null)
+const settingsPanel = ref(null)
 
 // ---- 全局方法 ----
 function toast(msg, type) {
@@ -116,6 +121,7 @@ const state = reactive({
   balance: 0,
 })
 
+const leftTab = ref('okr')
 const calendarDays = ref([])
 const todos = ref([])
 const okrData = ref(null)
@@ -199,14 +205,15 @@ async function loadOkrs() {
 }
 
 // ---- 秒表：开始计时 ----
-async function handleStartTimer(todo) {
+async function handleStartTimer({ todo, mode }) {
   if (timerInstance.value?.state.status !== 'idle') {
     toast('请先停止当前计时', 'warn')
     return
   }
   try {
-    await timerInstance.value?.start(api, todo.id, todo.date, todo.content)
-    toast('开始计时: ' + todo.content, 'info')
+    const modeLabel = mode === 'pomodoro' ? '🍅 番茄钟' : '🍌 香蕉钟'
+    await timerInstance.value?.start(api, todo.id, todo.date, todo.content, { mode })
+    toast(`${modeLabel}: ${todo.content}`, 'info')
     refreshSelectedDate()
   } catch (e) {
     toast('开始计时失败: ' + e.message, 'error')
@@ -249,9 +256,11 @@ async function toggleRestDay() {
   } catch (e) { toast('操作失败', 'error') }
 }
 
-// ---- 统计面板 ----
-function openStats() {
-  statsPanel.value?.open()
+// ---- 面板 ----
+function openPanel(name) {
+  if (name === 'stats') statsPanel.value?.open()
+  else if (name === 'achievements') achievementsPanel.value?.open()
+  else if (name === 'settings') settingsPanel.value?.open()
 }
 
 // ---- provide 刷新方法 ----

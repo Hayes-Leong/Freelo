@@ -10,6 +10,7 @@ router.post('/start', (req, res) => {
   try {
     const db = req.app.get('db');
     const { todo_id, date } = req.body;
+    const recordType = req.body.record_type || 'manual';
 
     if (!todo_id || !date) {
       return res.status(400).json({ error: '缺少 todo_id 或 date' });
@@ -50,6 +51,7 @@ router.post('/start', (req, res) => {
       end_time: null,
       duration_minutes: 0,
       status: 'running',
+      record_type: recordType,
     });
 
     // 更新全局计时器状态
@@ -57,6 +59,7 @@ router.post('/start', (req, res) => {
       current_todo_id: todo_id,
       current_start_time: now,
       status: 'running',
+      record_type: recordType,
     });
 
     res.status(201).json({
@@ -155,6 +158,7 @@ router.post('/resume', (req, res) => {
       end_time: null,
       duration_minutes: 0,
       status: 'running',
+      record_type: timerState.record_type || 'manual',
     });
 
     // 更新全局状态
@@ -220,10 +224,14 @@ router.post('/stop', (req, res) => {
       ? db.time_records.getByTodo(todoId).filter(tr => tr.status === 'completed')
       : [];
 
+    const lastId = allSegments.length > 0 ? allSegments[allSegments.length - 1].id : null;
+
     res.json({
       status: 'idle',
+      last_record_id: lastId,
       total_minutes: allSegments.reduce((s, seg) => s + (seg.duration_minutes || 0), 0),
       segments: allSegments.map(s => ({
+        id: s.id,
         duration_minutes: s.duration_minutes,
         start_time: s.start_time,
         end_time: s.end_time,
@@ -231,6 +239,24 @@ router.post('/stop', (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ error: err.message || '停止失败' });
+  }
+});
+
+/**
+ * PUT /api/timer/record/:id
+ * 更新分段类型（番茄完成后将 manual 升级为 pomodoro）
+ */
+router.put('/record/:id', (req, res) => {
+  try {
+    const db = req.app.get('db');
+    const id = Number(req.params.id);
+    const { record_type } = req.body;
+    if (!record_type) return res.status(400).json({ error: '缺少 record_type' });
+    const updated = db.time_records.update(id, { record_type });
+    if (!updated) return res.status(404).json({ error: '记录不存在' });
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: err.message || '更新失败' });
   }
 });
 

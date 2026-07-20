@@ -12,7 +12,7 @@
         :todo="todo"
         :timer-active="timerActive"
         @changed="$emit('refresh')"
-        @start-timer="$emit('startTimer', todo)"
+        @start-timer="(payload) => $emit('startTimer', payload)"
       />
     </ul>
 
